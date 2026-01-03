@@ -165,3 +165,7 @@ ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'
 
 # OpenAI
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+
+# Email (Development)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
