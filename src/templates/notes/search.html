@@ -3,6 +3,14 @@
 {% block content %}
 <div class="card">
     <h1>Search Notes</h1>
+    {% if last_upload %}
+    <p style="font-size: 0.9em; color: #666; margin-bottom: 1rem;">
+        Data from upload on: {{ last_upload.uploaded_at|date:"M d, Y H:i" }}
+        {% if not last_upload.processed %}
+        (Processing in progress...)
+        {% endif %}
+    </p>
+    {% endif %}
     <form method="get" action="{% url 'notes:search' %}">
         <input type="text" name="q" value="{{ query }}" placeholder="Ask a question or search for content..." autofocus>
         <button type="submit" class="btn">Search</button>

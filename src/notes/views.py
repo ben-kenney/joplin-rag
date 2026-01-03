@@ -22,7 +22,8 @@ def upload_view(request):
         else:
             messages.error(request, 'No file selected.')
     
-    return render(request, 'notes/upload.html')
+    last_upload = JoplinUpload.objects.filter(user=request.user).order_by('-uploaded_at').first()
+    return render(request, 'notes/upload.html', {'last_upload': last_upload})
 
 from .search import search_notes
 
@@ -34,8 +35,11 @@ def search_view(request):
     if query:
         results = search_notes(query, request.user)
     
+    last_upload = JoplinUpload.objects.filter(user=request.user).order_by('-uploaded_at').first()
+    
     context = {
         'query': query,
         'results': results,
+        'last_upload': last_upload,
     }
     return render(request, 'notes/search.html', context)
