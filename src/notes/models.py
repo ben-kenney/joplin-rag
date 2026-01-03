@@ -9,6 +9,8 @@ class JoplinUpload(models.Model):
     file = models.FileField(upload_to='uploads/sqlite/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed = models.BooleanField(default=False)
+    new_notes_count = models.IntegerField(default=0)
+    updated_notes_count = models.IntegerField(default=0)
     error_message = models.TextField(blank=True, null=True)
 
     def __str__(self):
