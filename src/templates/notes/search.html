@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load markdown_filters %}
 
 {% block content %}
 <div class="card">
@@ -36,7 +37,7 @@
             {% endif %}
         </div>
         <div class="result-snippet">
-            {{ chunk.content|truncatechars:300 }}
+            {{ chunk.content|render_markdown }}
         </div>
     </div>
     {% endfor %}
