@@ -17,3 +17,6 @@ wheels/
 .env
 
 uv.lock
+
+# Generated Static Files
+src/staticfiles/

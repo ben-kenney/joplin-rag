@@ -102,7 +102,9 @@ class JoplinETL:
         # This is a migration helper: if current chunks contain raw joplin links like ](:/ or old formatting, re-process.
         # We check the first chunk as a proxy or filter.
         if not created and not force_update:
-             if metadata.chunks.filter(content__contains="](:/").exists() or metadata.chunks.filter(content__contains="**Image Text:**").exists():
+             if metadata.chunks.filter(content__contains="](:/").exists() or \
+                metadata.chunks.filter(content__contains="**Image Text:**").exists() or \
+                metadata.chunks.filter(content__contains="[Image:").exists():
                  print(f"Force updating {title} to fix links/format...")
                  force_update = True
 
@@ -139,8 +141,8 @@ class JoplinETL:
                 # Return just the OCR text, cleaner integration
                 return f"\n{ocr_text}\n"
             
-            # Fallback: OCR missing. Replace with placeholder to avoid broken link image.
-            return f" [Image: {alt_text}] "
+            # Fallback: OCR missing. Replace with placeholder image.
+            return f" ![Placeholder: {alt_text}](/static/images/joplin_rag.png) "
 
         # Regex to match markdown links/images to local resources
         # Matches ![alt](:/id) or [alt](:/id)
