@@ -57,10 +57,15 @@ class JoplinETL:
             print(f"Found {len(notes)} notes.")
 
             # 3. Process Each Note
+            self.new_count = 0
+            self.updated_count = 0
+            
             for note in notes:
                 self.process_note(note, note_resources.get(note['id'], []))
             
             self.upload.processed = True
+            self.upload.new_notes_count = self.new_count
+            self.upload.updated_notes_count = self.updated_count
             self.upload.save()
             conn.close()
             
@@ -101,8 +106,10 @@ class JoplinETL:
             metadata.last_updated = updated_dt
             metadata.parent_id = parent_id
             metadata.save()
+            self.updated_count += 1
         else:
             print(f"New note {title}...")
+            self.new_count += 1
 
         # Prepare Content
         full_text = body + "\n\n"

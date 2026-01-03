@@ -11,6 +11,23 @@
             <label for="id_file">Database File (.sqlite):</label>
             <input type="file" name="file" id="id_file" required accept=".sqlite">
         </div>
+        {% if last_upload %}
+        <p>
+            <strong>Last Upload Status:</strong>
+            {% if last_upload.processed %}
+            <span style="color: green;">✓ Processed on {{ last_upload.uploaded_at|date:"Y-m-d H:i" }}</span>
+            {% else %}
+            <span style="color: orange;">⟳ Processing... (Refresh page to check status)</span>
+            {% endif %}
+        </p>
+        {% if last_upload.processed %}
+        <p>
+            <strong>Results:</strong>
+            {{ last_upload.new_notes_count }} new,
+            {{ last_upload.updated_notes_count }} updated.
+        </p>
+        {% endif %}
+        {% endif %}
         <button type="submit" class="btn">Upload & Process</button>
     </form>
 </div>
