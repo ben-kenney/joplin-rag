@@ -24,7 +24,7 @@
         <div class="result-meta">
             Updated: {{ chunk.note.last_updated|date:"M d, Y" }}
             {% if chunk.distance %}
-            | Distance: {{ chunk.distance|floatform:4 }}
+            | Distance: {{ chunk.distance }}
             {% endif %}
         </div>
         <div class="result-snippet">
