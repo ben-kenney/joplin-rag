@@ -158,8 +158,8 @@ class JoplinETL:
 
         # Split Text into manageable segments for embedding
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
+            chunk_size=getattr(settings, 'RAG_CHUNK_SIZE', 1000),
+            chunk_overlap=getattr(settings, 'RAG_CHUNK_OVERLAP', 200),
             length_function=len,
         )
         texts = text_splitter.split_text(full_text)
