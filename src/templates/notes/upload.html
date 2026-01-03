@@ -5,6 +5,27 @@
     <h1>Upload Joplin Database</h1>
     <p>Upload your <code>database.sqlite</code> file to enable semantic search.</p>
 
+    {% if settings_mismatch %}
+    <div
+        style="background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+        <strong>⚠️ RAG Settings Change Detected</strong>
+        <p>The next upload will trigger an <strong>automatic full re-index</strong> because your indexing parameters
+            have changed. This will ensure your embeddings are consistent with your current configuration.</p>
+        <div style="margin-top: 10px; font-size: 0.9em;">
+            <div style="margin-bottom: 5px;">
+                <strong>Old Settings:</strong>
+                Size: {{ old_chunk_size|default:"Unknown" }},
+                Overlap: {{ old_chunk_overlap|default:"Unknown" }}
+            </div>
+            <div>
+                <strong>New Settings (from .env):</strong>
+                Size: {{ current_chunk_size }},
+                Overlap: {{ current_chunk_overlap }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div>

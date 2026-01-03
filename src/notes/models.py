@@ -31,6 +31,10 @@ class NoteMetadata(models.Model):
     last_updated = models.DateTimeField(null=True, blank=True) # From user_updated_time
     parent_id = models.CharField(max_length=32, blank=True)
     
+    # Track RAG settings for re-indexing detection
+    chunk_size = models.IntegerField(null=True, blank=True)
+    chunk_overlap = models.IntegerField(null=True, blank=True)
+    
     class Meta:
         # User + Joplin ID should be unique to avoid duplicates for the same user
         unique_together = ('user', 'joplin_id')
