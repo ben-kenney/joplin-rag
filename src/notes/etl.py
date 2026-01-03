@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import re
 from datetime import datetime
 import pytz
 from django.utils import timezone
@@ -33,7 +34,7 @@ class JoplinETL:
             # Joplin stores links in note_resources
             print("Fetching resources...")
             cursor.execute("""
-                SELECT nr.note_id, r.ocr_text, r.title 
+                SELECT nr.note_id, r.id as resource_id, r.ocr_text
                 FROM resources r
                 JOIN note_resources nr ON r.id = nr.resource_id
                 WHERE r.ocr_text != '' AND r.ocr_text IS NOT NULL
@@ -42,8 +43,9 @@ class JoplinETL:
             for row in cursor.fetchall():
                 note_id = row['note_id']
                 if note_id not in note_resources:
-                    note_resources[note_id] = []
-                note_resources[note_id].append(row['ocr_text'])
+                    note_resources[note_id] = {}
+                # Store mapping of resource_id -> ocr_text
+                note_resources[note_id][row['resource_id']] = row['ocr_text']
 
             # 2. Fetch Notes
             print("Fetching notes...")
@@ -61,7 +63,7 @@ class JoplinETL:
             self.updated_count = 0
             
             for note in notes:
-                self.process_note(note, note_resources.get(note['id'], []))
+                self.process_note(note, note_resources.get(note['id'], {}))
             
             self.upload.processed = True
             self.upload.new_notes_count = self.new_count
@@ -74,7 +76,7 @@ class JoplinETL:
             self.upload.save()
             raise e
 
-    def process_note(self, note_row, ocr_texts):
+    def process_note(self, note_row, resources_map):
         joplin_id = note_row['id']
         title = note_row['title']
         body = note_row['body']
@@ -94,11 +96,22 @@ class JoplinETL:
         )
 
         # If not created, check if update is needed
-        if not created:
+        force_update = False
+        
+        # Check if we need to force update because of broken links in existing data
+        # This is a migration helper: if current chunks contain raw joplin links like ](:/ or old formatting, re-process.
+        # We check the first chunk as a proxy or filter.
+        if not created and not force_update:
+             if metadata.chunks.filter(content__contains="](:/").exists() or metadata.chunks.filter(content__contains="**Image Text:**").exists():
+                 print(f"Force updating {title} to fix links/format...")
+                 force_update = True
+
+        if not created and not force_update:
             if metadata.last_updated and updated_dt <= metadata.last_updated:
                 # Already up to date
                 return
             
+        if not created: 
             # Update needed: delete old chunks and update metadata
             print(f"Updating note {title}...")
             metadata.chunks.all().delete()
@@ -112,10 +125,29 @@ class JoplinETL:
             self.new_count += 1
 
         # Prepare Content
-        full_text = body + "\n\n"
-        if ocr_texts:
-            full_text += "--- OCR TEXT FROM IMAGES ---\n"
-            full_text += "\n\n".join(ocr_texts)
+        # Substitute resource links with OCR text if available
+        # Joplin links format: [title](:/resource_id) or ![title](:/resource_id)
+        
+        def replace_resource(match):
+            # match.group(1) is alt text
+            alt_text = match.group(1)
+            # match.group(2) is resource_id
+            resource_id = match.group(2)
+            
+            if resource_id in resources_map:
+                ocr_text = resources_map[resource_id]
+                # Return just the OCR text, cleaner integration
+                return f"\n{ocr_text}\n"
+            
+            # Fallback: OCR missing. Replace with placeholder to avoid broken link image.
+            return f" [Image: {alt_text}] "
+
+        # Regex to match markdown links/images to local resources
+        # Matches ![alt](:/id) or [alt](:/id)
+        full_text = re.sub(r'!\[(.*?)\]\(:\/([a-zA-Z0-9]{32})\)', replace_resource, body)
+        
+        # We can also do non-image links if desired, but usually OCR is for images
+        # full_text = re.sub(r'\[(.*?)\]\(:\/([a-zA-Z0-9]{32})\)', replace_resource, full_text)
 
         # Split Text
         text_splitter = RecursiveCharacterTextSplitter(
