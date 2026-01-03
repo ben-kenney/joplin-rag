@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h1>Search Notes</h1>
+    <form method="get" action="{% url 'notes:search' %}">
+        <input type="text" name="q" value="{{ query }}" placeholder="Ask a question or search for content..." autofocus>
+        <button type="submit" class="btn">Search</button>
+    </form>
+</div>
+
+{% if query %}
+<div class="card">
+    <h2>Results for "{{ query }}"</h2>
+
+    {% if results %}
+    {% for chunk in results %}
+    <div class="result-item">
+        <h3>
+            <a href="joplin://x-callback-url/openNote?id={{ chunk.note.joplin_id }}">
+                {{ chunk.note.title }}
+            </a>
+        </h3>
+        <div class="result-meta">
+            Updated: {{ chunk.note.last_updated|date:"M d, Y" }}
+            {% if chunk.distance %}
+            | Distance: {{ chunk.distance }}
+            {% endif %}
+        </div>
+        <div class="result-snippet">
+            {{ chunk.content|truncatechars:300 }}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No results found.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
