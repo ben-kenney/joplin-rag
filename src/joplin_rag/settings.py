@@ -123,15 +123,21 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = 1
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email', 'password1']
-ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_SESSION_REMEMBER = True
 LOGIN_REDIRECT_URL = 'notes:upload'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'
 
 # OpenAI API Key for generating embeddings
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+
+# RAG Settings
+RAG_CHUNK_SIZE = int(os.environ.get('RAG_CHUNK_SIZE', '1000'))
+RAG_CHUNK_OVERLAP = int(os.environ.get('RAG_CHUNK_OVERLAP', '200'))
 
 # Development Email Backend (prints to console instead of sending real emails)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

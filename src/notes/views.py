@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import JoplinUpload
+from django.conf import settings
+from .models import JoplinUpload, NoteMetadata
 from .tasks import process_database_task
 
 from django.http import HttpRequest, HttpResponse
@@ -29,9 +30,34 @@ def upload_view(request: HttpRequest) -> HttpResponse:
         else:
             messages.error(request, 'No file selected.')
     
+    # Check for RAG settings mismatch to warn about automatic flush/re-index
+    current_chunk_size = getattr(settings, 'RAG_CHUNK_SIZE', 1000)
+    current_chunk_overlap = getattr(settings, 'RAG_CHUNK_OVERLAP', 200)
+    
+    # Check if any existing notes were indexed with different settings
+    mismatch_note = NoteMetadata.objects.filter(
+        user=request.user
+    ).exclude(
+        chunk_size=current_chunk_size,
+        chunk_overlap=current_chunk_overlap
+    ).first()
+
+    settings_mismatch = mismatch_note is not None
+    old_chunk_size = mismatch_note.chunk_size if mismatch_note else None
+    old_chunk_overlap = mismatch_note.chunk_overlap if mismatch_note else None
+
     # Fetch the latest upload for status display
     last_upload = JoplinUpload.objects.filter(user=request.user).order_by('-uploaded_at').first()
-    return render(request, 'notes/upload.html', {'last_upload': last_upload})
+    
+    context = {
+        'last_upload': last_upload,
+        'settings_mismatch': settings_mismatch,
+        'current_chunk_size': current_chunk_size,
+        'current_chunk_overlap': current_chunk_overlap,
+        'old_chunk_size': old_chunk_size,
+        'old_chunk_overlap': old_chunk_overlap,
+    }
+    return render(request, 'notes/upload.html', context)
 
 from .search import search_notes
 

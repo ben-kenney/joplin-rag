@@ -121,6 +121,10 @@ class JoplinETL:
         updated_dt = get_process_time(updated_ms)
         parent_id = note_row['parent_id']
 
+        # Get current RAG settings
+        current_chunk_size = getattr(settings, 'RAG_CHUNK_SIZE', 1000)
+        current_chunk_overlap = getattr(settings, 'RAG_CHUNK_OVERLAP', 200)
+
         # Check existing metadata in our Django DB
         metadata, created = NoteMetadata.objects.get_or_create(
             user=self.upload.user,
@@ -128,22 +132,36 @@ class JoplinETL:
             defaults={
                 'title': title,
                 'last_updated': updated_dt,
-                'parent_id': parent_id
+                'parent_id': parent_id,
+                'chunk_size': current_chunk_size,
+                'chunk_overlap': current_chunk_overlap,
             }
         )
 
-        # If not created, check if update is needed (based on last_updated timestamp)
+        # Force update if settings mismatch or if note content has changed in Joplin
+        settings_mismatch = (
+            metadata.chunk_size != current_chunk_size or 
+            metadata.chunk_overlap != current_chunk_overlap
+        )
+
+        # If not created, check if update is needed
         if not created:
-            if metadata.last_updated and updated_dt <= metadata.last_updated:
-                # Already up to date, skip processing
+            if not settings_mismatch and metadata.last_updated and updated_dt <= metadata.last_updated:
+                # Already up to date and settings match, skip processing
                 return
             
             # Update needed: delete old chunks and update metadata info
-            print(f"Updating note {title}...")
+            if settings_mismatch:
+                print(f"Settings change detected for note {title}. Re-indexing...")
+            else:
+                print(f"Updating note {title}...")
+                
             metadata.chunks.all().delete()
             metadata.title = title
             metadata.last_updated = updated_dt
             metadata.parent_id = parent_id
+            metadata.chunk_size = current_chunk_size
+            metadata.chunk_overlap = current_chunk_overlap
             metadata.save()
             self.updated_count += 1
         else:
@@ -158,8 +176,8 @@ class JoplinETL:
 
         # Split Text into manageable segments for embedding
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
+            chunk_size=getattr(settings, 'RAG_CHUNK_SIZE', 1000),
+            chunk_overlap=getattr(settings, 'RAG_CHUNK_OVERLAP', 200),
             length_function=len,
         )
         texts = text_splitter.split_text(full_text)
