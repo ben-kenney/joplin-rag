@@ -6,9 +6,12 @@ A Django-based web application that enables semantic search over your Joplin not
 
 -   **SQLite Upload**: Securely upload your Joplin `database.sqlite` file.
 -   **Semantic Search**: Search your notes using natural language queries, powered by OpenAI embeddings.
--   **OCR Integration**: Automatically indexes text extracted from images in your notes (requires Joplin's OCR feature to be active).
+-   **OCR Integration**: Automatically indexes and displays text extracted from images in your notes.
+-   **Upload Feedback**: See the number of new and updated notes after each upload, along with completion status and timestamps.
+-   **Local Timezone Detection**: Dates and times are automatically displayed in your native timezone using `django-tz-detect`.
+-   **Markdown Rendering**: Search results are rendered with full Markdown support (tables, code blocks, etc.).
 -   **Deep Linking**: Search results include deep links (`joplin://`) to open notes directly in your local Joplin desktop application.
--   **Efficient Processing**: Uses an ETL pipeline to process uploads in the background and only re-indexes modified notes.
+-   **Efficient Processing**: Uses an ETL pipeline to process uploads in the background via Celery and only re-indexes modified notes.
 
 ## Architecture
 
@@ -20,20 +23,43 @@ This project uses a modern Python stack:
 -   **Dependency Management**: `uv` and `pyproject.toml`.
 -   **AI/ML**: OpenAI `text-embedding-ada-002` for generating embeddings.
 
-### How it Works
+## System Workflow
 
-1.  **Upload**: You upload your `database.sqlite` file via the web interface.
-2.  **ETL Process** (Background Task):
-    -   The system reads notes and resources from the SQLite file.
-    -   It merges OCR text from resources into the note body.
-    -   Content is split into chunks.
-    -   Embeddings are generated for each chunk using OpenAI.
-    -   Metadata and Embeddings are stored in PostgreSQL (`pgvector`).
-    -   *Note*: To respect privacy and storage, full note content is **not** duplicated in the Postgres database; it reads from the uploaded SQLite file on demand.
-3.  **Search**:
-    -   Your query is embedded.
-    -   A vector similarity search runs against the PostgreSQL database.
-    -   Results are ranked and presented with links to open them in Joplin.
+```mermaid
+graph TD
+    subgraph "ETL Process (Background)"
+        A[User Uploads database.sqlite] --> B{JoplinETL}
+        B --> C[Extract Notes & OCR Resources]
+        C --> D[Identify Changed/New Notes]
+        D --> E[Split Text into Chunks]
+        E --> F[Generate Embeddings via OpenAI]
+        F --> G[Store in Postgres + pgvector]
+    end
+
+    subgraph "Search Process"
+        H[User Enters Query] --> I[Generate Query Embedding]
+        I --> J[Filter by User Ownership & Vector Search]
+        J --> K[Rank Results by Similarity]
+        K --> L[Render Results with Markdown]
+    end
+
+    G -.-> J
+```
+
+## Project Structure
+
+```bash
+.
+├── src/                # All Django source code
+│   ├── joplin_rag/     # Project configuration (settings, urls, celery)
+│   ├── notes/          # Main application (models, views, ETL, search)
+│   ├── templates/      # HTML templates
+│   └── static/         # Static assets (CSS, images)
+├── docker-compose.yml  # Container orchestration
+├── Dockerfile          # Container definition
+├── pyproject.toml      # Dependency definitions (uv)
+└── README.md
+```
 
 ## Development Setup
 
@@ -49,7 +75,7 @@ This project uses a modern Python stack:
     ```bash
     cp .env.template .env
     ```
-    Ensure you set `OPENAI_API_KEY`. The database credentials in `.env.template` are set up for the Docker environment.
+    Ensure you set `OPENAI_API_KEY`.
 
 2.  **Start the Application**:
     ```bash
@@ -66,14 +92,8 @@ This project uses a modern Python stack:
     docker-compose exec web uv run python src/manage.py createsuperuser
     ```
 
-5.  **Access**:
-    -   Web App: http://localhost:8000
-    -   Admin Panel: http://localhost:8000/admin
-
 ## Usage
 
-1.  **Login/Signup**: Create an account or log in.
-2.  **Upload Database**: Go to the "Upload" tab. Select your `database.sqlite` file (usually found in `~/.config/joplin-desktop/` on Linux).
-3.  **Wait for Processing**: The system will process your notes in the background. This may take a few minutes depending on the size of your database.
-4.  **Search**: Go to the "Search" tab. Enter a query (e.g., "receipts from last month" or "project ideas").
-5.  **Open in Joplin**: Click the "Open in Joplin" button on a result to view the note in your desktop app.
+1.  **Upload**: Go to the "Upload" tab and select your `database.sqlite`.
+2.  **Monitor**: View the upload status and note counts directly on the upload page.
+3.  **Search**: Use the "Search" tab to query your library. Results include OCR text and rendered Markdown.

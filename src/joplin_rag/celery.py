@@ -1,3 +1,8 @@
+"""
+Celery configuration for the joplin_rag project.
+Initializes the Celery application and auto-discovers tasks from all registered apps.
+"""
+
 import os
 from celery import Celery
 
@@ -17,4 +22,7 @@ app.autodiscover_tasks()
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
+    """
+    A simple task that prints its own request information for debugging purposes.
+    """
     print(f'Request: {self.request!r}')
