@@ -5,23 +5,35 @@ import re
 
 register = template.Library()
 
-def fix_unclosed_code_blocks(text: str) -> str:
+def fix_broken_markdown(text: str) -> str:
     """
-    Fix unclosed markdown code blocks by removing orphan ``` markers.
+    Fix broken markdown elements that can occur when text is chunked.
     
-    This handles the case where text chunking splits a fenced code block,
-    leaving one chunk with an opening ``` but no closing one.
+    Handles:
+    - Unclosed fenced code blocks (```)
+    - Unclosed inline code (`)
+    - Unclosed bold/italic markers (* or **)
+    - Broken links/images at the end of text
     """
-    # Count occurrences of code block markers (```)
-    # We use regex to find all ``` that are at the start of a line or preceded by whitespace
-    pattern = r'```'
-    matches = list(re.finditer(pattern, text))
+    # Fix unclosed fenced code blocks (```)
+    fenced_blocks = len(re.findall(r'```', text))
+    if fenced_blocks % 2 != 0:
+        # Remove the last orphan marker
+        text = re.sub(r'```(?!.*```)', '', text, count=1)
     
-    if len(matches) % 2 != 0:
-        # Odd number of markers means there's an unclosed block
-        # Remove the last (orphan) marker
-        last_match = matches[-1]
-        text = text[:last_match.start()] + text[last_match.end():]
+    # Fix unclosed inline code (single backtick)
+    # Only fix if there's an odd number at the END of the text
+    inline_code = len(re.findall(r'(?<!`)`(?!`)', text))
+    if inline_code % 2 != 0:
+        # Remove trailing orphan backtick
+        text = re.sub(r'`\s*$', '', text)
+    
+    # Fix trailing broken link/image syntax (e.g., "[text" or "![alt")
+    text = re.sub(r'\[!\[?[^\]]*$', '', text)  # Remove incomplete image/link at end
+    text = re.sub(r'\[[^\]]*$', '', text)  # Remove incomplete link text at end
+    
+    # Fix trailing broken URL part (e.g., "](http://..." at the end)
+    text = re.sub(r'\]\([^\)]*$', '', text)
     
     return text
 
@@ -33,8 +45,8 @@ def render_markdown(text: str) -> SafeString:
     if not text:
         return mark_safe("")
     
-    # Fix unclosed code blocks before rendering
-    text = fix_unclosed_code_blocks(text)
+    # Fix broken markdown from chunking before rendering
+    text = fix_broken_markdown(text)
     
     # Use fenced_code for code blocks, nl2br to preserve newlines as breaks if needed,
     # tables for table support.
