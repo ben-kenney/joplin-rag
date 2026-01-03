@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h1>Upload Joplin Database</h1>
+    <p>Upload your <code>database.sqlite</code> file to enable semantic search.</p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+            <label for="id_file">Database File (.sqlite):</label>
+            <input type="file" name="file" id="id_file" required accept=".sqlite">
+        </div>
+        <button type="submit" class="btn">Upload & Process</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Instructions</h2>
+    <ol>
+        <li>Locate your Joplin profile directory.</li>
+        <li>Copy the <code>database.sqlite</code> file.</li>
+        <li>Upload it here.</li>
+        <li>Wait for processing to complete (this may take a few minutes depending on database size).</li>
+    </ol>
+</div>
+{% endblock %}
