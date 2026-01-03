@@ -38,8 +38,8 @@ graph TD
 
     subgraph "Search Process"
         H[User Enters Query] --> I[Generate Query Embedding]
-        I --> J[Vector Similarity Search]
-        J --> K[Filter by User Ownership]
+        I --> J[Filter by User Ownership & Vector Search]
+        J --> K[Rank Results by Similarity]
         K --> L[Render Results with Markdown]
     end
 
