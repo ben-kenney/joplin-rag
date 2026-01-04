@@ -24,7 +24,7 @@
 
     {% if results %}
     {% for chunk in results %}
-    <div class="result-item">
+    <div class="result-item" id="result-{{ chunk.id }}">
         <h3>
             <a href="joplin://x-callback-url/openNote?id={{ chunk.note.joplin_id }}">
                 {{ chunk.note.title }}
@@ -35,9 +35,18 @@
             {% if chunk.distance %}
             | Distance: {{ chunk.distance }}
             {% endif %}
+            <button class="btn elaborate-btn" data-chunk-id="{{ chunk.id }}" data-query="{{ query }}"
+                style="margin-left: 1rem; padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                ✨ Elaborate
+            </button>
         </div>
         <div class="result-snippet">
             {{ chunk.content|render_markdown }}
+        </div>
+        <div class="elaboration-result" id="elaboration-{{ chunk.id }}"
+            style="display: none; margin-top: 1rem; padding: 1rem; background-color: #f0f7ff; border-left: 3px solid #2e86de; border-radius: 4px;">
+            <strong>✨ AI Elaboration</strong>
+            <div class="elaboration-content" style="margin-top: 0.5rem;"></div>
         </div>
     </div>
     {% endfor %}
@@ -45,5 +54,51 @@
     <p>No results found.</p>
     {% endif %}
 </div>
+
+<script>
+    document.querySelectorAll('.elaborate-btn').forEach(button => {
+        button.addEventListener('click', async function () {
+            const chunkId = this.dataset.chunkId;
+            const query = this.dataset.query;
+            const resultDiv = document.getElementById(`elaboration-${chunkId}`);
+            const contentDiv = resultDiv.querySelector('.elaboration-content');
+
+            // Show loading state
+            this.disabled = true;
+            this.textContent = '⏳ Loading...';
+            resultDiv.style.display = 'block';
+            contentDiv.innerHTML = '<em>Generating elaboration...</em>';
+
+            try {
+                const response = await fetch('{% url "notes:elaborate" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        chunk_id: chunkId,
+                        query: query
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    contentDiv.innerHTML = data.elaborated.replace(/\n/g, '<br>');
+                    this.textContent = '✨ Elaborated';
+                } else {
+                    contentDiv.innerHTML = `<span style="color: red;">Error: ${data.error}</span>`;
+                    this.textContent = '✨ Elaborate';
+                    this.disabled = false;
+                }
+            } catch (error) {
+                contentDiv.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+                this.textContent = '✨ Elaborate';
+                this.disabled = false;
+            }
+        });
+    });
+</script>
 {% endif %}
 {% endblock %}
