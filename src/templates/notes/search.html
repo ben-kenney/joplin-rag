@@ -37,8 +37,21 @@
             {% endif %}
         </div>
         <div class="result-snippet">
+            {% if '--- OCR TEXT FROM IMAGES ---' in chunk.content %}
+            {% with chunk.content|cut:'--- OCR TEXT FROM IMAGES ---' as parts %}
             {{ chunk.content|render_markdown }}
+            {% endwith %}
+            {% else %}
+            {{ chunk.content|render_markdown }}
+            {% endif %}
         </div>
+        {% if '--- OCR TEXT FROM IMAGES ---' in chunk.content %}
+        <div
+            style="margin-top: 10px; padding: 10px; background-color: #f0f7ff; border-left: 3px solid #2e86de; font-size: 0.9em;">
+            <strong>📷 OCR Text Detected</strong>
+            <p style="margin: 5px 0 0 0; color: #555;">This result includes text extracted from images.</p>
+        </div>
+        {% endif %}
     </div>
     {% endfor %}
     {% else %}
