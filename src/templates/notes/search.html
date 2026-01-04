@@ -63,6 +63,26 @@
             const resultDiv = document.getElementById(`elaboration-${chunkId}`);
             const contentDiv = resultDiv.querySelector('.elaboration-content');
 
+            // If already visible, just toggle hide
+            if (resultDiv.style.display === 'block') {
+                resultDiv.style.display = 'none';
+                // Only change text back to "Elaborate" if it wasn't loading/error? 
+                // Actually, keep it simple: "Elaborated" means it's done. 
+                // If user hides it, button could say "Show Elaboration" or stay "Elaborate"?
+                // Let's implement smart toggle behavior:
+                if (this.textContent.includes('Elaborated')) {
+                    this.textContent = 'Show Elaboration';
+                }
+                return;
+            } else if (contentDiv.innerHTML.trim() !== '' && !contentDiv.innerHTML.includes('Generating')) {
+                // Already have content (and not loading), just show it
+                resultDiv.style.display = 'block';
+                this.textContent = '✨ Elaborated (Click to hide)';
+                return;
+            }
+
+            // --- Fetch New Elaboration ---
+
             // Show loading state
             this.disabled = true;
             this.textContent = '⏳ Loading...';
@@ -86,15 +106,15 @@
 
                 if (data.success) {
                     contentDiv.innerHTML = data.elaborated.replace(/\n/g, '<br>');
-                    this.textContent = '✨ Elaborated';
+                    this.textContent = '✨ Elaborated (Click to hide)';
                 } else {
                     contentDiv.innerHTML = `<span style="color: red;">Error: ${data.error}</span>`;
                     this.textContent = '✨ Elaborate';
-                    this.disabled = false;
                 }
             } catch (error) {
                 contentDiv.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
                 this.textContent = '✨ Elaborate';
+            } finally {
                 this.disabled = false;
             }
         });
