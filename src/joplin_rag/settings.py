@@ -139,6 +139,9 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 RAG_CHUNK_SIZE = int(os.environ.get('RAG_CHUNK_SIZE', '1000'))
 RAG_CHUNK_OVERLAP = int(os.environ.get('RAG_CHUNK_OVERLAP', '200'))
 
+# Markdown Rendering (set to False to see raw markdown in search results)
+RENDER_MARKDOWN = os.environ.get('RENDER_MARKDOWN', 'true').lower() == 'true'
+
 # Development Email Backend (prints to console instead of sending real emails)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 ACCOUNT_EMAIL_VERIFICATION = 'optional'

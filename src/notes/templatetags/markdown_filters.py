@@ -37,6 +37,8 @@ def fix_broken_markdown(text: str) -> str:
     
     return text
 
+from django.conf import settings as django_settings
+
 @register.filter(name='render_markdown')
 def render_markdown(text: str) -> SafeString:
     """
@@ -44,6 +46,12 @@ def render_markdown(text: str) -> SafeString:
     """
     if not text:
         return mark_safe("")
+    
+    # Check if markdown rendering is disabled
+    if not getattr(django_settings, 'RENDER_MARKDOWN', True):
+        # Return raw text in a preformatted block
+        from django.utils.html import escape
+        return mark_safe(f"<pre style='white-space: pre-wrap;'>{escape(text)}</pre>")
     
     # Fix broken markdown from chunking before rendering
     text = fix_broken_markdown(text)
