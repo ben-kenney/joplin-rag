@@ -89,6 +89,7 @@ from django.views.decorators.http import require_POST
 from .models import NoteChunk
 import openai
 import json
+import markdown
 
 @login_required
 @require_POST
@@ -123,10 +124,13 @@ def elaborate_view(request: HttpRequest) -> JsonResponse:
         system_prompt = """You are a helpful assistant that elaborates on search results. 
 The user searched for information and got a partial match from their notes. 
 Your job is to:
-1. Clean up the content (fix any OCR errors, formatting issues)
-2. Highlight the parts most relevant to the search query
-3. Provide a clear, readable summary
-Keep your response concise but informative."""
+1. Clean up the content (fix any OCR errors, formatting issues) and return valid markdown. 
+2. Follow these markdown rules:
+    a. For tables: Use plain text for headers (no formatting like **bold** or *italics*).
+    b. For headers outside of tables:Only use `###` or `####`
+3. Highlight the parts most relevant to the search query
+4. Provide a short,clear summary
+Keep your response concise."""
 
         user_prompt = f"""Search Query: "{query}"
 
@@ -151,9 +155,16 @@ Please elaborate on this content in relation to the search query."""
         
         elaborated_content = response.choices[0].message.content
         
+        # Render markdown to HTML
+        elaborated_html = markdown.markdown(
+            elaborated_content,
+            extensions=['fenced_code', 'nl2br', 'tables', 'sane_lists']
+        )
+        
         return JsonResponse({
             'success': True,
             'elaborated': elaborated_content,
+            'elaborated_html': elaborated_html,
             'note_title': chunk.note.title
         })
         

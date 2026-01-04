@@ -105,7 +105,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    contentDiv.innerHTML = data.elaborated.replace(/\n/g, '<br>');
+                    contentDiv.innerHTML = data.elaborated_html;
                     this.textContent = '✨ Elaborated (Click to hide)';
                 } else {
                     contentDiv.innerHTML = `<span style="color: red;">Error: ${data.error}</span>`;
