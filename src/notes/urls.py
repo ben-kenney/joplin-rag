@@ -17,4 +17,7 @@ urlpatterns = [
     
     # Interface for performing semantic vector search
     path('search/', views.search_view, name='search'),
+    
+    # API endpoint for LLM elaboration of search results
+    path('elaborate/', views.elaborate_view, name='elaborate'),
 ]

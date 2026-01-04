@@ -82,3 +82,93 @@ def search_view(request: HttpRequest) -> HttpResponse:
         'last_upload': last_upload,
     }
     return render(request, 'notes/search.html', context)
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import NoteChunk
+import openai
+import json
+import markdown
+
+@login_required
+@require_POST
+def elaborate_view(request: HttpRequest) -> JsonResponse:
+    """
+    Takes a chunk ID and search query, sends to OpenAI to elaborate/clean up the content.
+    Returns the elaborated response as JSON.
+    """
+    try:
+        data = json.loads(request.body)
+        chunk_id = data.get('chunk_id')
+        query = data.get('query', '')
+        
+        if not chunk_id:
+            return JsonResponse({'error': 'Missing chunk_id'}, status=400)
+        
+        # Get the chunk and verify ownership
+        try:
+            chunk = NoteChunk.objects.select_related('note').get(
+                id=chunk_id,
+                note__user=request.user
+            )
+        except NoteChunk.DoesNotExist:
+            return JsonResponse({'error': 'Chunk not found'}, status=404)
+        
+        # Check for API key
+        openai_api_key = settings.OPENAI_API_KEY
+        if not openai_api_key:
+            return JsonResponse({'error': 'OpenAI API key not configured'}, status=500)
+        
+        # Create the prompt
+        system_prompt = """You are a helpful assistant that elaborates on search results. 
+The user searched for information and got a partial match from their notes. 
+Your job is to:
+1. Clean up the content (fix any OCR errors, formatting issues) and return valid markdown. 
+2. Follow these markdown rules:
+    a. For tables: Use plain text for headers (no formatting like **bold** or *italics*).
+    b. For headers outside of tables:Only use `###` or `####`
+3. Highlight the parts most relevant to the search query
+4. Provide a short,clear summary
+Keep your response concise."""
+
+        user_prompt = f"""Search Query: "{query}"
+
+Note Title: {chunk.note.title}
+
+Content from the note:
+{chunk.content}
+
+Please elaborate on this content in relation to the search query."""
+
+        # Call OpenAI
+        client = openai.OpenAI(api_key=openai_api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        elaborated_content = response.choices[0].message.content
+        
+        # Render markdown to HTML
+        elaborated_html = markdown.markdown(
+            elaborated_content,
+            extensions=['fenced_code', 'nl2br', 'tables', 'sane_lists']
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'elaborated': elaborated_content,
+            'elaborated_html': elaborated_html,
+            'note_title': chunk.note.title
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
