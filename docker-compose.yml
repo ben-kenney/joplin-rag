@@ -17,6 +17,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - RAG_CHUNK_SIZE=${RAG_CHUNK_SIZE}
       - RAG_CHUNK_OVERLAP=${RAG_CHUNK_OVERLAP}
+      - RENDER_MARKDOWN=${RENDER_MARKDOWN}
     depends_on:
       db:
         condition: service_healthy
