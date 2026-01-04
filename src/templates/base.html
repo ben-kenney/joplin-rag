@@ -145,6 +145,36 @@
             padding: 0.5rem;
             border-radius: 4px;
             font-size: 0.9rem;
+            overflow-x: auto;
+            /* Add scrollbar if content is too wide */
+        }
+
+        .result-snippet img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .result-snippet pre {
+            background-color: #e9ecef;
+            padding: 0.5rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            /* Scrollbar for code blocks */
+        }
+
+        .result-snippet code {
+            /* Force inline code to respect container width */
+            display: inline-block;
+            max-width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: bottom;
+            /* Align correctly with text */
+        }
+
+        /* But reset for code inside pre, as pre handles scrolling */
+        .result-snippet pre code {
+            word-break: normal;
         }
     </style>
 </head>
