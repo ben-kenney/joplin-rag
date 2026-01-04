@@ -35,13 +35,15 @@
         }
 
         nav .nav-inner {
-            max-width: 960px;
+            max-width: 1200px;
+            width: 90%;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
+        /* ... nav a ... */
         nav a {
             text-decoration: none;
             color: var(--text);
@@ -60,7 +62,8 @@
         }
 
         .container {
-            max-width: 960px;
+            max-width: 1200px;
+            width: 90%;
             margin: 2rem auto;
             padding: 0 1rem;
         }
@@ -149,12 +152,14 @@
             /* Add scrollbar if content is too wide */
         }
 
-        .result-snippet img {
+        .result-snippet img,
+        .elaboration-content img {
             max-width: 100%;
             height: auto;
         }
 
-        .result-snippet pre {
+        .result-snippet pre,
+        .elaboration-content pre {
             background-color: #e9ecef;
             padding: 0.5rem;
             border-radius: 4px;
@@ -162,7 +167,8 @@
             /* Scrollbar for code blocks */
         }
 
-        .result-snippet code {
+        .result-snippet code,
+        .elaboration-content code {
             /* Force inline code to respect container width */
             display: inline-block;
             max-width: 100%;
@@ -173,8 +179,41 @@
         }
 
         /* But reset for code inside pre, as pre handles scrolling */
-        .result-snippet pre code {
+        .result-snippet pre code,
+        .elaboration-content pre code {
             word-break: normal;
+        }
+
+        /* Markdown Tables */
+        .result-snippet table,
+        .elaboration-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+            border: 1px solid #ccc;
+            background-color: var(--surface);
+            /* Ensure table has solid background */
+        }
+
+        .result-snippet th,
+        .elaboration-content th,
+        .result-snippet td,
+        .elaboration-content td {
+            border: 1px solid #ccc;
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        .result-snippet th,
+        .elaboration-content th {
+            background-color: #f1f2f6;
+            /* Slightly darker header */
+            font-weight: 600;
+        }
+
+        .result-snippet tr:nth-child(even),
+        .elaboration-content tr:nth-child(even) {
+            background-color: #f8f9fa;
         }
     </style>
 </head>
